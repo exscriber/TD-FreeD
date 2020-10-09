@@ -1,12 +1,7 @@
 # FreeD module by NNZ
 #
 from dataclasses import dataclass
-
-
-class Message:
-    @staticmethod
-    def checksum(buf: bytes):
-        return 0x40 - sum(buf) & 0xFF
+from contextlib import suppress
 
 
 @dataclass
@@ -25,6 +20,44 @@ class Param:
         return int.from_bytes(buf[self.loc],
                               byteorder='big',
                               signed=self.signed)
+
+
+class Message:
+    fmt = []
+
+    @staticmethod
+    def checksum(buf: bytes):
+        return 0x40 - sum(buf) & 0xFF
+
+    @classmethod
+    def parse(cls, msg: bytes):
+        result = dict()
+        for param in cls.fmt:
+            result[param.name] = param.parse(msg)
+        return result
+
+    @classmethod
+    def from_bytes(cls, buf: bytes):
+        obj = cls()
+        for param in cls.fmt:
+            value = param.parse(buf)
+            if param.mult:
+                value /= param.mult
+            setattr(obj, param.name, value)
+        return obj
+
+    def to_bytes(self):
+        result = bytearray(self.length)
+        for param in self.fmt[:-1]:
+            value = getattr(self, param.name)
+            if param.mult:
+                value *= param.mult
+            with suppress(OverflowError):
+                result[param.loc] = int(value).to_bytes(param.size,
+                                                        byteorder='big',
+                                                        signed=param.signed)
+        result[-1] = self.checksum(result[:-1])
+        return bytes(result)
 
 
 @dataclass
@@ -58,37 +91,14 @@ class D1(Message):
         Param('_chk', 28, 1),
     ]
 
-    def to_bytes(self):
-        result = bytearray(self.length)
-        for param in self.fmt[:-1]:
-            value = getattr(self, param.name)
-            if param.mult:
-                value *= param.mult
-            result[param.loc] = int(value).to_bytes(param.size,
-                                                    byteorder='big',
-                                                    signed=param.signed)
-        result[-1] = self.checksum(result[:-1])
-        return bytes(result)
-
-    @classmethod
-    def from_bytes(cls, buf: bytes):
-        obj = cls()
-        for param in cls.fmt:
-            value = param.parse(buf)
-            if param.mult:
-                value /= param.mult
-            setattr(obj, param.name, value)
-        return obj
-
-    @classmethod
-    def parse(cls, msg: bytes):
-        result = dict()
-        for param in cls.fmt:
-            result[param.name] = param.parse(msg)
-        return result
-
 
 class DA(Message):
     """ camera calibration data """
     length = 30
     _id = 0xDA
+
+
+if __name__ == '__main__':
+    msg = D1()
+    print(msg)
+    pass
