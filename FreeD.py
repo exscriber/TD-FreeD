@@ -92,13 +92,41 @@ class D1(Message):
     ]
 
 
+@dataclass
 class DA(Message):
     """ camera calibration data """
     length = 30
     _id = 0xDA
+    cam: int = 255
+    shiftx: float = 0
+    shifty: float = 0
+    scalex: float = 1
+    scaley: float = 1
+    k1: float = 0
+    k2: float = 0
+    offsetx: float = 0
+    offsety: float = 0
+    offsetz: float = 0
+
+    fmt = [
+        Param('_id', 0, 1),
+        Param('cam', 1, 1),
+        Param('shiftx', 2, 3, mult=256, signed=True),
+        Param('shifty', 5, 3, mult=256, signed=True),
+        Param('scalex', 8, 3, mult=256, signed=True),
+        Param('scaley', 11, 3, mult=256, signed=True),
+        Param('k1', 14, 3, mult=256, signed=True),
+        Param('k2', 17, 3, mult=256, signed=True),
+        Param('offsetx', 20, 3, mult=64000, signed=True),
+        Param('offsety', 23, 3, mult=64000, signed=True),
+        Param('offsetz', 26, 3, mult=64000, signed=True),
+        Param('_chk', 29, 1),
+    ]
 
 
 if __name__ == '__main__':
-    msg = D1()
-    print(msg)
+    msg1 = D1()
+    print(msg1)
+    msg2 = DA()
+    print(msg2)
     pass
