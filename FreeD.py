@@ -23,6 +23,7 @@ class Param:
 
 
 class Message:
+    length = 0
     fmt = []
 
     @staticmethod
